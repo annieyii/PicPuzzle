@@ -22,14 +22,14 @@ def split_image(image, rows, cols):
 
 def shuffle_tiles_on_screen(tiles, rows, cols, tile_width, tile_height):
     """打亂拼圖並隨機放置在屏幕上"""
-    positions = []
-    for row in range(rows):
-        for col in range(cols):
-            positions.append(pygame.Rect(col * tile_width, row * tile_height, tile_width, tile_height))
-    random.shuffle(positions)
+    grid_positions = [
+        pygame.Rect(col * tile_width, row * tile_height, tile_width, tile_height)
+        for row in range(rows) for col in range(cols)
+    ]
+    random.shuffle(grid_positions)
 
     for i, (tile, _) in enumerate(tiles):
-        tiles[i] = (tile, positions[i])
+        tiles[i] = (tile, grid_positions[i])
 
 def draw_grid(screen, rows, cols, tile_width, tile_height):
     """繪製提示網格"""
@@ -109,7 +109,10 @@ def main():
                         if tiles == original_tiles:
                             print("拼圖完成！")
                         else:
-                            print("拼圖尚未完成。")
+                            print("拼圖尚未完成。問題點如下：")
+                            for i, ((current_tile, current_rect), (correct_tile, correct_rect)) in enumerate(zip(tiles, original_tiles)):
+                                if current_rect != correct_rect:
+                                    print(f"塊 {i} 錯誤：當前位置 {current_rect.topleft}，應該為 {correct_rect.topleft}")        
                     else:
                         for index, (_, rect) in enumerate(tiles):
                             if rect.collidepoint(pos):
@@ -121,12 +124,24 @@ def main():
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1 and dragging:
                     dragging = False
-                    pos = pygame.mouse.get_pos()
-                    for index, (_, rect) in enumerate(tiles):
-                        if rect.collidepoint(pos):
-                            # 交換位置
-                            tiles[selected_index], tiles[index] = tiles[index], tiles[selected_index]
-                            break
+                    if selected_tile:
+                        _, rect = selected_tile
+                        # 找到最近的網格位置
+                        closest_row = round(rect.y / tile_height)
+                        closest_col = round(rect.x / tile_width)
+                        target_x = closest_col * tile_width
+                        target_y = closest_row * tile_height
+
+                        # 檢查目標位置是否被其他塊佔用
+                        for index, (_, other_rect) in enumerate(tiles):
+                            if other_rect.topleft == (target_x, target_y):
+                                # 交換位置
+                                other_rect.x, other_rect.y = rect.x, rect.y
+                                rect.x, rect.y = target_x, target_y
+                                break
+                            else:
+                                 # 如果沒有衝突，直接放置到目標位置
+                                rect.x, rect.y = target_x, target_y
 
             if event.type == pygame.MOUSEMOTION and dragging:
                 if selected_tile:
