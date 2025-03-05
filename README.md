@@ -4,5 +4,6 @@ This is a simple **sliding puzzle game** built using **Pygame**. The game allows
 
 ### Run the game
 ```
+pip3 install -r requirements.txt 
 python3 main.py
 ```
